@@ -29,11 +29,12 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
 
 ---
 ## Entity Component System
-
 ### 문법
+#### ComponentData
+- 컴포넌트에 사용될 정보를 저장하는 구조체
 
-#### IComponentData
-- 범용 컴포넌트를 구현하기 위한 인터페이스
+##### IComponentData
+- 범용 컴포넌트를 구현하기 위한 인터페이스.
 ```csharp
 [GenerateAuthoringComponent]
 public struct ComponentData : IComponentData
@@ -41,9 +42,41 @@ public struct ComponentData : IComponentData
     public float fComponentValue;
 }
 ```
-- **GenerateAuthoringComponent :** ECS 컴포넌트는 MonoBehaviour를 상속받는 존재가 아니기에 인스펙터에 노출 시킬수가 없다. 그래서 사용하는게 해당 속성인데, 구조체에 부여하면 엔티티의 인스펙터에 노출시킬 수 있게 되어 초기 값을 지정할 수 있게 된다.
-- 
+- 인터페이스를 포함하는 구조체여야 하며, 관리되지 않거나?(Unmanaged), Blittable 유형만 포함할 수 있다.
+  - C#에서 정의된 Blittable 타입
+  - bool
+  - char
+  - (고정된 크기의 문자 버퍼)
+  - BlobAssetReference<T> (블롭 데이터 구조에 대한 참조)
+  - 고정 배열 (불안전 컨텍스트)
+  - 관리되지 않거나?(Unmanaged), 블리터블 필드를 포함한 구조체
+- **GenerateAuthoringComponent :** ECS 컴포넌트는 MonoBehaviour를 상속받는 존재가 아니기에 인스펙터에 노출 시킬수가 없다. 그래서 사용하는게 해당 속성인데, 구조체에 부여하면 엔티티의 인스펙터에 노출시킬 수 있게 되어 초기 값을 지정할 수 있게 된다.   
+유니티에서 자동으로 public 필드를 포함하는 MonoBehaviour 클래스를 생성하여 인스펙터에 노출시켜준다. 
 
-####
+##### ComponentDataProxy
+- 범용 컴포넌트 구조체를 인스펙터에 노출 시키기위해 사용하는 프록시 클래스
+> **Deprecated**. use GameObject-to-Entity Conversion workflow instead.
+```csharp
+[DisallowMultipleComponent]
+public class ComponentProxy : ComponentDataProxy<ComponentDataStruct> { }
+```
+
+#### System
+- ComponentData를 관리하는 매니저 형태의 클래스
+
+##### ComponentSystem
+- 메인 쓰레드만 이용하는 컴포넌트 관리 시스템
+-구현 정보
+  - ForEach delegate를 이용한 반복 처리
+  
+##### JobComponentSystem
+- 멀티 쓰레딩을 이용하는 컴포넌트 관리 시스템
+- 구현 정보
+  - JobForEach 인터페이스 구현
+  - IJobForEachWithEntity 인터페이스 구현
+  - IJobChunk 인터페이스 구현
+  - 수동 반복(Manual iteration) 처리
+
+#####
 ---
 ## Job System
