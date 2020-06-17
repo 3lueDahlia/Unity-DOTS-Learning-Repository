@@ -25,6 +25,25 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
 | :---: | :---: |
 | Entity Component System | 메모리 설계 최적화 |
 | Job System | 멀티 쓰레딩 기능 강화 |
-  | Burst Compiler | 컴파일 성능 최적화 |
+| Burst Compiler | 컴파일 성능 최적화 |
 
 ---
+## Entity Component System
+
+### 문법
+
+#### IComponentData
+- 범용 컴포넌트를 구현하기 위한 인터페이스
+```csharp
+[GenerateAuthoringComponent]
+public struct ComponentData : IComponentData
+{
+    public float fComponentValue;
+}
+```
+- **GenerateAuthoringComponent :** ECS 컴포넌트는 MonoBehaviour를 상속받는 존재가 아니기에 인스펙터에 노출 시킬수가 없다. 그래서 사용하는게 해당 속성인데, 구조체에 부여하면 엔티티의 인스펙터에 노출시킬 수 있게 되어 초기 값을 지정할 수 있게 된다.
+- 
+
+####
+---
+## Job System
