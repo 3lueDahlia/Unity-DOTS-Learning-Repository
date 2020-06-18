@@ -411,3 +411,8 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
 
 ---
 ## Burst Compiler
+
+---
+# 참고 자료
+Unity DOTS 관련 문서
+https://docs.unity3d.com/Packages/com.unity.entities@0.11/api/Unity.Entities.html
