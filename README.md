@@ -84,7 +84,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
       }
       ```
   
-  ##### [JobComponentSystem](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#JobComponentSystem)
+  ##### [JobComponentSystem](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#jobcomponentsystem-1)
   - 멀티 쓰레딩을 활용하는 컴포넌트 관리 시스템. 아래의 Job System에서 상세 서술.
 
 #### Entity
@@ -157,7 +157,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     }
     ```
     - 컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 쿼리의 변경 필터에 대상 컴포넌트를 추가할 수 있다.   
-    최대 2개까지 확인할 수 있기에, 더 많은 비교가 필요하거나 EntityQuery를 사용하지 않는 경우 [수동](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#job-system)으로 확인할 수 있다. (Job System 하단에 상세 설명)
+    최대 2개까지 확인할 수 있기에, 더 많은 비교가 필요하거나 EntityQuery를 사용하지 않는 경우 [수동](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#job-system)으로 확인할 수 있다. (Job System 하단에 Manual Iteration에 대한 상세 설명)
     ```chsarp
     class RotateComponentSystem : JobComponentSystem
     {
@@ -213,7 +213,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
   ```
   
   - IJobForEachWithEntity
-    - IJobForEach와 비슷하게 동작하지만, 차이점은현재 엔티티의 Entity 오브젝트와 인덱스, 컴포넌트 배열을 제공한다.
+    - IJobForEach와 비슷하게 동작하지만, 차이점은 현재 엔티티의 Entity 오브젝트와 인덱스, 컴포넌트 배열을 제공한다.
     - 엔티티 오브젝트를 사용하여 EntityCommandBuffer에 명령을 추가할 수 있게 된다.   
     예를 들면, 해당 엔티티에서 컴포넌트를 추가 또는 제거하거나, 엔티티를 파괴하는 명령을 추가하여 경쟁 조건을 피하기 위해 특정 작업 도중에 직접 수행 할 수 없는 작업을 수행 시킬 수 있게된다.
   ```csharp
@@ -297,7 +297,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     ```
     - 컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 수동으로 비교하여 처리할 수 있다.   
     ArchetypeChunk.DidChange()함수를 사용하여 컴포넌트의 청크 변경 버전을 시스템의 LastSystemVersion과 비교한다.   
-    이 함수가 false를 반환하면 시스템을 마지막으로 실행 한 이후 해당 엔티티의 컴포넌트가 변경되지 않았으므로 현재 청크를 건너뛰라는 기능을 추가할 수 있게 된다.
+    DidChange() 함수가 false를 반환하면 시스템을 마지막으로 실행 한 이후 해당 엔티티의 컴포넌트가 변경되지 않았으므로 현재 청크를 건너뛰라는 기능을 추가할 수 있게 된다.
     ```chsarp[BurstCompile]
     struct UpdateJob : IJobChunk
     {
@@ -348,6 +348,66 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     ```
     
   - 수동 반복(Manual iteration)
+    NativeArray에서 모든 청크를 명시 적으로 요청하고 IJobParallelFor와 같은 작업으로 처리 할 수도 있다.   
+    EntityQuery 같이 모든 청크를 단순 반복하는 모델에 적합하지 않은 방식으로 청크를 관리해야하는 경우에 권장된다.
+    
+    ```csharp
+    public class RotationSpeedSystem : JobComponentSystem
+    {
+       [BurstCompile]
+       struct RotationSpeedJob : IJobParallelFor
+       {
+           [DeallocateOnJobCompletion] public NativeArray<ArchetypeChunk> Chunks;
+           public ArchetypeChunkComponentType<RotationQuaternion> RotationType;
+           [ReadOnly] public ArchetypeChunkComponentType<RotationSpeed> RotationSpeedType;
+           public float DeltaTime;
+
+           public void Execute(int chunkIndex)
+           {
+               var chunk = Chunks[chunkIndex];
+               var chunkRotation = chunk.GetNativeArray(RotationType);
+               var chunkSpeed = chunk.GetNativeArray(RotationSpeedType);
+               var __instanceCount __= chunk.Count;
+
+               for (int i = 0; i < instanceCount; i++)
+               {
+                   var rotation = chunkRotation[i];
+                   var speed = chunkSpeed[i];
+                   rotation.Value = math.mul(math.normalize(rotation.Value), quaternion.AxisAngle(math.up(), speed.RadiansPerSecond * DeltaTime));
+                   chunkRotation[i] = rotation;
+               }
+           }
+       }
+
+       EntityQuery m_group;   
+
+       protected override void OnCreate()
+       {
+           var query = new EntityQueryDesc
+           {
+               All = new ComponentType[]{ typeof(RotationQuaternion), ComponentType.ReadOnly<RotationSpeed>() }
+           };
+
+           m_group = GetEntityQuery(query);
+       }
+
+       protected override JobHandle OnUpdate(JobHandle inputDeps)
+       {
+           var rotationType = GetArchetypeChunkComponentType<RotationQuaternion>();
+           var rotationSpeedType = GetArchetypeChunkComponentType<RotationSpeed>(true);
+           var chunks = m_group.CreateArchetypeChunkArray(Allocator.__TempJob__);
+
+           var rotationsSpeedJob = new RotationSpeedJob
+           {
+               Chunks = chunks,
+               RotationType = rotationType,
+               RotationSpeedType = rotationSpeedType,
+               DeltaTime = Time.deltaTime
+           };
+           return rotationsSpeedJob.Schedule(chunks.Length,32,inputDeps);
+       }
+    }
+    ```
 
 ---
 ## Burst Compiler
