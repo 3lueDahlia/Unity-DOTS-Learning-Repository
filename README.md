@@ -45,14 +45,14 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
         public float fComponentValue;
     }
     ```
-  - 인터페이스를 포함하는 구조체여야 하며, 관리되지 않거나?(Unmanaged), Blittable 유형만 포함할 수 있다.
+  - 인터페이스를 포함하는 구조체여야 하며, 비관리형, Blittable 유형만 포함할 수 있다.
     - C#에서 정의된 Blittable 타입
     - bool
     - char
     - (고정된 크기의 문자 버퍼)
     - BlobAssetReference<T> (블롭 데이터 구조에 대한 참조)
     - 고정 배열 (불안전 컨텍스트)
-    - 관리되지 않거나?(Unmanaged), 블리터블 필드를 포함한 구조체
+    - 비관리형, 블리터블 필드를 포함한 구조체
   - **GenerateAuthoringComponent :** ECS 컴포넌트는 MonoBehaviour를 상속받는 존재가 아니기에 인스펙터에 노출 시킬수가 없다. 그래서 사용하는게 해당 속성인데, 구조체에 부여하면 엔티티의 인스펙터에 노출시킬 수 있게 되어 초기 값을 지정할 수 있게 된다.   
   유니티에서 자동으로 public 필드를 포함하는 MonoBehaviour 클래스를 생성하여 인스펙터에 노출시켜준다. 
 
