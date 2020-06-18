@@ -85,17 +85,18 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
 
 #### Entity
 - 1개 이상의 컴포넌트를 지닌 오브젝트
+  - 게임 오브젝트를 엔티티화 시키기 위해선, **Convert To Entity** 라는 컴포넌트를 할당해야 한다.
 - Component 시스템 내에서 특정 엔티티들을 가져오기 위한 Entity Query를 람다식으로 지원한다.
 - 작업의 진행은 Run, Schedule, ScheduleParallel 로 나뉜다.
-  - **Run :** 메인 스레드에서 즉시 실행된다.
-  - **Schedule :** 잡 시스템을 이용하여 단일 스레드에 작업을 예약한다
-  - **ScheduleParallel :** 잡 시스템을 이용하여 병렬 스레드에 작업을 예약한다
+  - **Run :** 메인 스레드에서 즉시 실행한다.
+  - **Schedule :** 단일 스레드에 작업을 예약한다
+  - **ScheduleParallel :** 병렬 스레드에 작업을 예약한다
 - ex)
   ```csharp
   Entities.WithAll<LocalToWorld>()
     .WithAny<Rotation, Translation, Scale>()
     .WithNone<LocalToParent>()
-    .ForEach((ref ComponentDataA outputData, in ComponentDataB inputData) =>
+    .ForEach((ref ComponentDataA outputDataA, in ComponentDataB inputDataB) =>
     {
         /* do some work */
     })
@@ -105,12 +106,47 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
   
 ##### Entitiy Query
 
+
 ---
 ## Job System
 ### JobComponentSystem
-- 멀티 쓰레딩을 이용하는 컴포넌트 관리 시스템
+- 멀티 쓰레딩을 활용하는 컴포넌트 관리 시스템
 - 구현 정보
-  - JobForEach 인터페이스 구현
-  - IJobForEachWithEntity 인터페이스 구현
-  - IJobChunk 인터페이스 구현
-  - 수동 반복(Manual iteration) 처리
+  - JobForEach
+  
+  ```csharp
+  public class RotationSpeedSystem : JobComponentSystem 
+  {
+    // [BurstCompile] attribute를 사용시, job 코드 컴파일 시 Burst 컴파일러가 사용된다. 
+    [BurstCompile]
+    struct RotationSpeedJob : IJobForEach<RotationQuaternion, RotationSpeed> 
+    {
+      public float DeltaTime;
+      public void Execute(ref RotationQuaternion rotationQuaternion, [ReadOnly] ref RotationSpeed rotSpeed) 
+      { // [ReadOnly] attribute를 사용해서 job이 대상 컴포넌트 데이터를 읽기만 하고 쓰지 않는다고 명시한다. 
+        // RotationSpeed를 속도 값으로 취해서 up 벡터 방향으로 enitity를 회전시키는 로직이다.
+        rotationQuaternion.Value = math.mul(math.normalize(rotationQuaternion.Value), 
+          quaternion.AxisAngle(math.up(), rotSpeed.RadiansPerSecond * DeltaTime)); 
+      } 
+    }
+    
+    // OnUpdate는 메인 쓰레드에서 실행됨
+    // 'Rotation'에서 읽거/쓰기로 또는 'RotationSpeed'에서 읽기 이전에 예약된 모든 작업은 자동으로 '입력 종속성'에 포함된다.
+    protected override JobHandle OnUpdate(JobHandle inputDependencies) 
+    {
+      var job = new RotationSpeedJob() 
+      {
+        DeltaTime = Time.deltaTime 
+      }; 
+
+      return job.Schedule(this, inputDependencies); 
+    }
+  }
+  ```
+  
+  - IJobForEachWithEntity
+  - IJobChunk
+  - 수동 반복(Manual iteration)
+
+---
+## Burst Compiler
