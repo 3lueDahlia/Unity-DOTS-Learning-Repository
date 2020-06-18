@@ -131,7 +131,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
     }
     
     // OnUpdate는 메인 쓰레드에서 실행됨
-    // 'Rotation'에서 읽거/쓰기로 또는 'RotationSpeed'에서 읽기 이전에 예약된 모든 작업은 자동으로 '입력 종속성'에 포함된다.
+    // 'Rotation'에서 읽거/쓰기로 또는 'RotationSpeed'에서 읽기로 이전에 예약된 모든 작업은 자동으로 'inputDependencies'에 포함된다.
     protected override JobHandle OnUpdate(JobHandle inputDependencies) 
     {
       var job = new RotationSpeedJob() 
