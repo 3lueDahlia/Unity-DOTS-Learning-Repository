@@ -178,10 +178,11 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
 ### JobComponentSystem
 - 멀티 쓰레딩을 활용하는 컴포넌트 관리 시스템
 - 구현 정보
-  - JobForEach
-    - 작업이 실행되면 ECS 프레임 워크는 필요한 컴포넌트가 있는 모든 엔티티를 찾고 각 엔티티에 대한 Execute() 함수를 호출한다.   
+  - JobForEach   
+    ~~작업이 실행되면 ECS 프레임 워크는 필요한 컴포넌트가 있는 모든 엔티티를 찾고 각 엔티티에 대한 Execute() 함수를 호출한다.~~
     데이터는 메모리에 배치 된 순서대로 처리되고 작업이 병렬로 실행되므로 IJobForEach 에 단순성과 효율성이 결합된다.
-  
+    > Deprecated Use Entities.ForEach or IJobChunk to Schedule
+
   ```csharp
   public class RotationSpeedSystem : JobComponentSystem 
   {
