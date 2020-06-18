@@ -31,52 +31,85 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
 ## Entity Component System
 ### 문법
 #### ComponentData
-- 컴포넌트에 사용될 정보를 저장하는 구조체
+    컴포넌트에 사용될 정보를 저장하는 구조체
 
-##### IComponentData
-- 범용 컴포넌트를 구현하기 위한 인터페이스.
-```csharp
-[GenerateAuthoringComponent]
-public struct ComponentData : IComponentData
-{
-    public float fComponentValue;
-}
+  ##### IComponentData
+  - 범용 컴포넌트를 구현하기 위한 인터페이스.
+    ```csharp
+    [GenerateAuthoringComponent]
+    public struct ComponentData : IComponentData
+    {
+        public float fComponentValue;
+    }
+    ```
+  - 인터페이스를 포함하는 구조체여야 하며, 관리되지 않거나?(Unmanaged), Blittable 유형만 포함할 수 있다.
+    - C#에서 정의된 Blittable 타입
+    - bool
+    - char
+    - (고정된 크기의 문자 버퍼)
+    - BlobAssetReference<T> (블롭 데이터 구조에 대한 참조)
+    - 고정 배열 (불안전 컨텍스트)
+    - 관리되지 않거나?(Unmanaged), 블리터블 필드를 포함한 구조체
+  - **GenerateAuthoringComponent :** ECS 컴포넌트는 MonoBehaviour를 상속받는 존재가 아니기에 인스펙터에 노출 시킬수가 없다. 그래서 사용하는게 해당 속성인데, 구조체에 부여하면 엔티티의 인스펙터에 노출시킬 수 있게 되어 초기 값을 지정할 수 있게 된다.   
+  유니티에서 자동으로 public 필드를 포함하는 MonoBehaviour 클래스를 생성하여 인스펙터에 노출시켜준다. 
+
+  ##### ComponentDataProxy
+  - ~~범용 컴포넌트 구조체를 인스펙터에 노출 시키기위해 사용하는 프록시 클래스~~
+  > **Deprecated**. use GameObject-to-Entity Conversion workflow instead.
+  ```csharp
+  [DisallowMultipleComponent]
+  public class ComponentProxy : ComponentDataProxy<ComponentDataStruct> { }
 ```
-- 인터페이스를 포함하는 구조체여야 하며, 관리되지 않거나?(Unmanaged), Blittable 유형만 포함할 수 있다.
-  - C#에서 정의된 Blittable 타입
-  - bool
-  - char
-  - (고정된 크기의 문자 버퍼)
-  - BlobAssetReference<T> (블롭 데이터 구조에 대한 참조)
-  - 고정 배열 (불안전 컨텍스트)
-  - 관리되지 않거나?(Unmanaged), 블리터블 필드를 포함한 구조체
-- **GenerateAuthoringComponent :** ECS 컴포넌트는 MonoBehaviour를 상속받는 존재가 아니기에 인스펙터에 노출 시킬수가 없다. 그래서 사용하는게 해당 속성인데, 구조체에 부여하면 엔티티의 인스펙터에 노출시킬 수 있게 되어 초기 값을 지정할 수 있게 된다.   
-유니티에서 자동으로 public 필드를 포함하는 MonoBehaviour 클래스를 생성하여 인스펙터에 노출시켜준다. 
 
-##### ComponentDataProxy
-- 범용 컴포넌트 구조체를 인스펙터에 노출 시키기위해 사용하는 프록시 클래스
-> **Deprecated**. use GameObject-to-Entity Conversion workflow instead.
-```csharp
-[DisallowMultipleComponent]
-public class ComponentProxy : ComponentDataProxy<ComponentDataStruct> { }
-```
+#### SystemBase
+    ComponentData를 관리하는 매니저 형태의 클래스
 
-#### System
-- ComponentData를 관리하는 매니저 형태의 클래스
-
-##### ComponentSystem
-- 메인 쓰레드만 이용하는 컴포넌트 관리 시스템
--구현 정보
-  - ForEach delegate를 이용한 반복 처리
+  ##### ComponentSystem
+  - 메인 쓰레드만 이용하는 컴포넌트 관리 시스템
+  -구현 정보
+    - ForEach delegate를 이용한 반복 처리
+      ```csharp
+      public class AwesomeComponentSystem : ComponentSystem 
+      {
+        protected override void OnUpdate() 
+        {
+          Entities.ForEach((ref ComponentDataA componentDataA, ref ComponentDataB componentDataB) => 
+          {
+            /* do someting */
+          }); 
+        }
+      }
+      ```
   
-##### JobComponentSystem
-- 멀티 쓰레딩을 이용하는 컴포넌트 관리 시스템
-- 구현 정보
-  - JobForEach 인터페이스 구현
-  - IJobForEachWithEntity 인터페이스 구현
-  - IJobChunk 인터페이스 구현
-  - 수동 반복(Manual iteration) 처리
+  ##### JobComponentSystem
+  - 멀티 쓰레딩을 이용하는 컴포넌트 관리 시스템
+  - 구현 정보
+    - JobForEach 인터페이스 구현
+    - IJobForEachWithEntity 인터페이스 구현
+    - IJobChunk 인터페이스 구현
+    - 수동 반복(Manual iteration) 처리
 
-#####
+#### Entity
+- 1개 이상의 컴포넌트를 지닌 오브젝트
+- Component 시스템 내에서 특정 엔티티들을 가져오기 위한 Entity Query를 람다식으로 지원한다.
+- 작업의 진행은 Run, Schedule, ScheduleParallel 로 나뉜다.
+  - **Run :** 메인 스레드에서 즉시 실행된다.
+  - **Schedule :** 잡 시스템을 이용하여 단일 스레드에 작업을 예약한다
+  - **ScheduleParallel :** 잡 시스템을 이용하여 병렬 스레드에 작업을 예약한다
+- ex)
+  ```csharp
+  Entities.WithAll<LocalToWorld>()
+    .WithAny<Rotation, Translation, Scale>()
+    .WithNone<LocalToParent>()
+    .ForEach((ref ComponentDataA outputData, in ComponentDataB inputData) =>
+    {
+        /* do some work */
+    })
+    .Schedule();
+  ```
+  - 이 경우엔 LocalToWorld, ComponentDataA, ComponentDataB를 포함하고, Rotation, Translation, Scale 중 하나라도 포함하며, LocalToParent는 없는 엔티티를 모두 가져오고, 작업은 단일 쓰레드에 예약한다.
+  
+##### Entitiy Query
+
 ---
 ## Job System
