@@ -213,8 +213,9 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
   ```
   
   - IJobForEachWithEntity
-    - IJobForEach와 비슷하게 동작하지만, 차이점은 Execute() 함수 시그니처가 현재 엔티티의 Entity 오브젝트와 확장 된 병렬 배열의 컴포넌트 배열을 제공한다.
-    - 엔티티 오브젝트를 사용하여 EntityCommandBuffer에 명령을 추가할 수 있게 된다. 예를 들면, 해당 엔티티에서 컴포넌트를 추가 또는 제거하거나 엔티티를 파괴하는 명령을 추가하여 경쟁 조건을 피하기 위해 특정 작업 도중에 직접 수행 할 수 없는 작업을 수행 시킬 수 있게된다.
+    - IJobForEach와 비슷하게 동작하지만, 차이점은현재 엔티티의 Entity 오브젝트와 인덱스, 컴포넌트 배열을 제공한다.
+    - 엔티티 오브젝트를 사용하여 EntityCommandBuffer에 명령을 추가할 수 있게 된다.   
+    예를 들면, 해당 엔티티에서 컴포넌트를 추가 또는 제거하거나, 엔티티를 파괴하는 명령을 추가하여 경쟁 조건을 피하기 위해 특정 작업 도중에 직접 수행 할 수 없는 작업을 수행 시킬 수 있게된다.
   ```csharp
   public class SpawnerSystem : JobComponentSystem
   {
