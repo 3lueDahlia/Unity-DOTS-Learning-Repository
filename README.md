@@ -157,7 +157,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     }
     ```
     - 컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 쿼리의 변경 필터에 대상 컴포넌트를 추가할 수 있다.   
-    최대 2개까지 확인할 수 있기에, 더 많은 비교가 필요하거나 EntityQuery를 사용하지 않는 경우 [수동]()으로 확인할 수 있다
+    최대 2개까지 확인할 수 있기에, 더 많은 비교가 필요하거나 EntityQuery를 사용하지 않는 경우 [수동](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#job-system)으로 확인할 수 있다. (Job System 하단에 상세 설명)
     ```chsarp
     class RotateComponentSystem : JobComponentSystem
     {
