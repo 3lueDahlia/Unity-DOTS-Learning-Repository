@@ -81,13 +81,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
       }
       ```
   
-  ##### JobComponentSystem
-  - 멀티 쓰레딩을 이용하는 컴포넌트 관리 시스템
-  - 구현 정보
-    - JobForEach 인터페이스 구현
-    - IJobForEachWithEntity 인터페이스 구현
-    - IJobChunk 인터페이스 구현
-    - 수동 반복(Manual iteration) 처리
+  ##### [JobComponentSystem](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#JobComponentSystem)
 
 #### Entity
 - 1개 이상의 컴포넌트를 지닌 오브젝트
@@ -113,3 +107,10 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택
 
 ---
 ## Job System
+### JobComponentSystem
+- 멀티 쓰레딩을 이용하는 컴포넌트 관리 시스템
+- 구현 정보
+  - JobForEach 인터페이스 구현
+  - IJobForEachWithEntity 인터페이스 구현
+  - IJobChunk 인터페이스 구현
+  - 수동 반복(Manual iteration) 처리
