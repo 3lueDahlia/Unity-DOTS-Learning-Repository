@@ -58,11 +58,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
 
   ##### ComponentDataProxy
   - ~~범용 컴포넌트 구조체를 인스펙터에 노출 시키기위해 사용하는 프록시 클래스~~
-  > **Deprecated**. use GameObject-to-Entity Conversion workflow instead.
-  ```csharp
-  [DisallowMultipleComponent]
-  public class ComponentProxy : ComponentDataProxy<ComponentDataStruct> { }
-```
+  > **Deprecated**. use GameObject-to-Entity Conversion workflow instead. *대체용으로 GenerateAuthoringComponent를 사용하는 듯 하다.*
 
 #### SystemBase
     ComponentData를 관리하는 매니저 형태의 클래스
@@ -109,7 +105,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
   - 이 경우엔 LocalToWorld, ComponentDataA, ComponentDataB를 포함하고, Rotation, Translation, Scale 중 하나라도 포함하며, LocalToParent는 없는 엔티티를 모두 가져오고, 작업은 단일 쓰레드에 예약한다.
   
 ##### Entitiy Query      
-- EntityQuery는 시스템이 관련 Chunk 및 Entity 를 처리하기 위해 아키타입에 포함해야 하는 컴포넌트 타입의 묶음을 정의한다.   
+- EntityQuery는 시스템이 관련 청크나 엔티티 를 처리하기 위해 아키타입에 포함해야 하는 [컴포넌트 타입의 묶음]을 정의한다.   
 아키타입은 추가 컴포넌트를 가질 수 있지만 최소한 EntityQuery에 의해 정의 된 컴포넌트를 가져야한다.   
 특정 엔티티의 컴포넌트가 포함 된 아키타입도 제외 할 수 있다.
 
@@ -134,7 +130,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     }
     ```
     
-    > 복잡한 상황의 경우  EntityQueryDesc 를 사용할 수 있다. EntityQueryDesc는 컴포넌트 타입을 지정하기위한 유연한 쿼리 메커니즘을 제공한다.
+    > 복잡한 상황의 경우  EntityQueryDesc 를 사용할 수 있다. EntityQueryDesc는 컴포넌트 타입의 유연한 지정을 위한 쿼리 메커니즘을 제공한다.
     ```csharp
     public class RotationSpeedSystem : JobComponentSystem
     {
@@ -155,9 +151,11 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
          // m_Group = GetEntityQuery(new EntityQueryDesc[] {query0, query1}); 를 이용해서 여러 쿼리를 겹치게 할 수도 있다.
       }
     }
+    
     ```
-    - 컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 쿼리의 변경 필터에 대상 컴포넌트를 추가할 수 있다.   
-    최대 2개까지 확인할 수 있기에, 더 많은 비교가 필요하거나 EntityQuery를 사용하지 않는 경우 [수동](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#job-system)으로 확인할 수 있다. (Job System 하단에 Manual Iteration에 대한 상세 설명)
+    컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 쿼리의 **변경 필터**에 대상 컴포넌트를 추가할 수 있다.   
+    최대 2개까지 확인할 수 있기에, 더 많은 비교가 필요하거나 EntityQuery를 사용하지 않는 경우 [수동 반복](https://github.com/3lueDahlia/Unity-DOTS-Learning-Repository/blob/master/README.md#job-system)으로 확인할 수 있다.(Job System 하단에 Manual Iteration에 대한 상세 설명)
+    
     ```chsarp
     class RotateComponentSystem : JobComponentSystem
     {
@@ -180,93 +178,20 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
 - 구현 정보
   - JobForEach   
     ~~작업이 실행되면 ECS 프레임 워크는 필요한 컴포넌트가 있는 모든 엔티티를 찾고 각 엔티티에 대한 Execute() 함수를 호출한다.~~   
-    데이터는 메모리에 배치 된 순서대로 처리되고 작업이 병렬로 실행되므로 IJobForEach 에 단순성과 효율성이 결합된다.
+    ~~데이터는 메모리에 배치 된 순서대로 처리되고 작업이 병렬로 실행되므로 IJobForEach 에 단순성과 효율성이 결합된다.~~
     > Deprecated Use Entities.ForEach or IJobChunk to Schedule
-
-  ```csharp
-  public class RotationSpeedSystem : JobComponentSystem 
-  {
-    // [BurstCompile] 속성을 사용하면 Job 코드를 컴파일 할 때 Burst 컴파일러가 사용된다. 
-    [BurstCompile]
-    struct RotationSpeedJob : IJobForEach<RotationQuaternion, RotationSpeed> 
-    {
-      public float DeltaTime;
-      public void Execute(ref RotationQuaternion rotationQuaternion, [ReadOnly] ref RotationSpeed rotSpeed) 
-      { // [ReadOnly] 속성을 사용해서 Job이 대상 컴포넌트 데이터를 읽기만 하고 쓰지 않는다고 명시한다.
-        // RotationSpeed를 속도 값으로 math.up() 벡터 방향으로 enitity를 회전시키는 로직.
-        rotationQuaternion.Value = math.mul(math.normalize(rotationQuaternion.Value), 
-          quaternion.AxisAngle(math.up(), rotSpeed.RadiansPerSecond * DeltaTime)); 
-      } 
-    }
-    
-    // OnUpdate는 메인 쓰레드에서 실행된다.
-    // 'Rotation'에서 읽거/쓰기로 또는 'RotationSpeed'에서 읽기로 이전에 예약된 모든 작업은 자동으로 'inputDependencies'에 포함된다.
-    protected override JobHandle OnUpdate(JobHandle inputDependencies) 
-    {
-      var job = new RotationSpeedJob() 
-      {
-        DeltaTime = Time.deltaTime 
-      }; 
-
-      return job.Schedule(this, inputDependencies); 
-    }
-  }
-  ```
   
   - IJobForEachWithEntity
-    - IJobForEach와 비슷하게 동작하지만, 차이점은 현재 엔티티의 Entity 오브젝트와 인덱스, 컴포넌트 배열을 제공한다.
-    - 엔티티 오브젝트를 사용하여 EntityCommandBuffer에 명령을 추가할 수 있게 된다.   
-    예를 들면, 해당 엔티티에서 컴포넌트를 추가 또는 제거하거나, 엔티티를 파괴하는 명령을 추가하여 경쟁 조건을 피하기 위해 특정 작업 도중에 직접 수행 할 수 없는 작업을 수행 시킬 수 있게된다.
-  ```csharp
-  public class SpawnerSystem : JobComponentSystem
-  {
-     // EndFrameBarrier 는 CommandBuffer 를 제공한다
-     EndFrameBarrier m_EndFrameBarrier;
-
-     protected override void OnCreate()
-     {
-         // m_EndFrameBarrier에 EndFrameBarrier를 캐시하기에, 모든 프레임을 가져올 필요가 없어짐
-         m_EndFrameBarrier = World.GetOrCreateSystem<EndFrameBarrier>();
-     }
-     struct SpawnJob : IJobForEachWithEntity<Spawner, LocalToWorld>
-     {
-         public EntityCommandBuffer CommandBuffer;
-         public void Execute(Entity entity, int index, [ReadOnly] ref Spawner spawner, [ReadOnly] ref LocalToWorld location)
-         {
-             for (int x = 0; x < spawner.CountX; x++)
-             {
-                 for (int y = 0; y < spawner.CountY; y++)
-                 {
-                     var __instance __= CommandBuffer.Instantiate(spawner.Prefab);
-                     // Place the instantiated in a grid with some noise
-                     // 약간의 노이즈(오차)가 있는 그리드 위의 인스턴스 위치
-                     var position = math.transform(location.Value, new float3(x * 1.3F, noise.cnoise(new float2(x, y) * 0.21F) * 2, y * 1.3F));
-                     CommandBuffer.SetComponent(instance, new Translation {Value = position});
-                 }
-             }
-             CommandBuffer.DestroyEntity(entity);
-         }
-     }
-
-     protected override JobHandle OnUpdate(JobHandle inputDeps)
-     {
-         // EntityCommandBuffer에 Instantiate 명령을 추가할 작업을 예약.
-         var job = new SpawnJob
-         {
-             CommandBuffer = m_EndFrameBarrier.CreateCommandBuffer()
-         }.ScheduleSingle(this, inputDeps);
-
-         // barrier system에 명령을 실행하기 전에 어떤 작업을 완료해야 하는지 알려줘야 한다.
-         m_EndFrameBarrier.AddJobHandleForProducer(job);
-
-         return job;
-     }
-  }
-  ```
+    ~~IJobForEach와 비슷하게 동작하지만, 차이점은 현재 엔티티의 Entity 오브젝트와 인덱스, 컴포넌트 배열을 제공한다.~~
+    ~~엔티티 오브젝트를 사용하여 EntityCommandBuffer에 명령을 추가할 수 있게 된다.~~
+    ~~예를 들면, 해당 엔티티에서 컴포넌트를 추가 또는 제거하거나, 엔티티를 파괴하는 명령을 추가하여 경쟁 조건을 피하기 위해 특정 작업 도중에 직접 수행 할 수 없는 작업을 수행 시킬 수 있게된다.~~
+    > Deprecated Use Entities.ForEach or IJobChunk to Schedule
+  
   - IJobChunk
     IJobChunk 인터페이스를 구현하면, Entity 단위가 아니라 Chunk 메모리 블록 단위로 데이터의 반복 처리가 가능하다.
     
-    - 시스템이 Execute() 메소드에 전달하는 청크 내부의 컴포넌트 배열에 접근하려면 Job이 읽기/쓰기가 가능한 각 컴포넌트 타입에 대한 객체인 ArchetypeChunkComponentType을 작성해야 한다. 객체를 사용하면 엔티티의 컴포넌트에 접근 할 수있는 NativeArray 인스턴스를 얻을 수 있다.   
+    시스템이 Execute() 메소드에 전달하는 청크 내부의 컴포넌트 배열에 접근하려면 Job이 읽기/쓰기가 가능한 컴포넌트 타입에 대한 객체인 ArchetypeChunkComponentType을 작성해야 한다. 객체를 사용하면 엔티티의 컴포넌트에 접근 할 수있는 NativeArray 인스턴스를 얻을 수 있다.   
+    
     ```chsarp
     [BurstCompile]
     struct RotationSpeedJob : IJobChunk
@@ -296,10 +221,11 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
        }
     }
     ```
-    - 컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 수동으로 비교하여 처리할 수 있다.   
+    컴포넌트의 값이 변경되었을 때만 엔티티를 업데이트해야 하는 경우 수동으로 비교하여 처리할 수 있다.   
     ArchetypeChunk.DidChange()함수를 사용하여 컴포넌트의 청크 변경 버전을 시스템의 LastSystemVersion과 비교한다.   
-    DidChange() 함수가 false를 반환하면 시스템을 마지막으로 실행 한 이후 해당 엔티티의 컴포넌트가 변경되지 않았으므로 현재 청크를 건너뛰라는 기능을 추가할 수 있게 된다.
-    ```chsarp[BurstCompile]
+    DidChange() 함수가 false를 반환하면 시스템을 마지막으로 실행 한 이후 해당 엔티티의 컴포넌트가 변경되지 않았으므로 현재 청크를 건너뛰는 기능의 구현이 가능해진다.
+    ```chsarp
+    [BurstCompile]
     struct UpdateJob : IJobChunk
     {
        public ArchetypeChunkComponentType<InputA> InputAType;
@@ -317,7 +243,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
           //...
     }
     
-    // 다른 Job 구조체 필드와 마찬가지로, 작업을 예약하기 전에 LastSystemVersion을 지정해야 한다.
+    // 작업을 예약(Schedule) 하기 전에 LastSystemVersion을 지정해야 한다.
     public class  UpdateSystem : JobComponentSystem
     {
       protected override JobHandle OnUpdate(JobHandle inputDeps)
@@ -331,7 +257,7 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     }
     ```
     
-    - IJobChunk 작업을 실행하려면 Job 구조체의 인스턴스를 작성하고 구조체 필드를 설정 한 후 작업을 예약해야한다.   
+    IJobChunk 작업을 실행하려면 Job 구조체의 인스턴스를 작성하고 구조체 필드를 설정 한 후 작업을 예약해야한다.   
     JobComponentSystem의 OnUpdate() 함수에서 이 작업을 수행하면 시스템은 작업이 매 프레임마다 실행되도록 예약한다.
     ```csharp
     // OnUpdate는 매 프레임마다 호출된다.
@@ -349,8 +275,8 @@ DOTS - Data Oriented Tech Stack - 데이터 지향 기술 스택.
     ```
     
   - 수동 반복(Manual iteration)
-    NativeArray에서 모든 청크를 명시 적으로 요청하고 IJobParallelFor와 같은 작업으로 처리 할 수도 있다.   
-    EntityQuery 같이 모든 청크를 단순 반복하는 모델에 적합하지 않은 방식으로 청크를 관리해야하는 경우에 권장된다.
+    NativeArray 에서 모든 청크를 명시적으로 요청하고 IJobParallelFor 같은 작업으로 처리 할 수도 있다.   
+    EntityQuery 같은 모든 청크에 대한 단순 반복형 모델이 청크 관리에 적합하지 않은 경우 권장된다.
     
     ```csharp
     public class RotationSpeedSystem : JobComponentSystem
